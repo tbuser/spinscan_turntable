@@ -8,7 +8,7 @@ echo("Hub Diameter: ", hub_diameter);
 echo("Hub Height: ", hub_height+hub_thickness);
 echo("Gear Height: ", gear_height);
 
-layout();
+// layout();
 // motor_layout();
 
 // hub();
@@ -17,7 +17,7 @@ layout();
 // roller();
 // laser_clamp();
 // gear_large();
-// gear_small();
+gear_small();
 // motor_mount();
 // pcb_mount(); 
 // cam_mount();
@@ -212,9 +212,9 @@ module gear_small() {
         hub_thickness = gear_height+7,
         hub_diameter = 20,
         circles=0,
-        number_of_teeth=11);
-      translate([0,-5,gear_height+4.5])cube([5.5,2.3,9],center = true);
-  		translate([0,0,gear_height+7/2])rotate([0,90,-90])cylinder(r=1.7,h=20);  		
+        number_of_teeth=10, $fn=20);
+      translate([0,-4.5,gear_height+4.5])cube([5.5,2.3,9],center = true);
+  		translate([0,0,gear_height+7/2])rotate([0,90,-90])cylinder(r=1.7,h=20);
     }
   }
 }
