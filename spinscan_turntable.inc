@@ -1,3 +1,5 @@
+lazy_susan_height = 10;
+
 motor_width = 43;
 motor_height = 33;
 motor_shaft_height = 25;
@@ -12,7 +14,7 @@ nut_radius = nut_diameter/2;
 nut_height = 7;
 
 hub_thickness = 5;
-hub_height = 40;
+hub_height = 50;
 // hub_height = motor_height+2;
 // hub_diameter = motor_width*1.75+hub_thickness;
 hub_diameter = 60;
@@ -22,15 +24,11 @@ bearing_diameter = 22.3;
 bearing_radius = bearing_diameter/2;
 bearing_height = 7;
 
-table_diameter = 300;
+table_diameter = 215.9; // 8 1/2"
 table_radius = table_diameter/2;
-table_height = 10;
+table_height = 6.35; // 1/4" wood
 
-gear_height = (motor_height+motor_shaft_height)-(hub_height+hub_thickness);
-gear_diameter_large = 100;
-gear_diameter_small = 20;
-gear_radius_large = gear_diameter_large/2;
-gear_radius_small = gear_diameter_small/2;
+gear_height = lazy_susan_height-2;
 
 //spoke_length_top = table_radius-hub_radius-hub_thickness*4;
 //spoke_length_bottom = (table_radius-hub_radius) * sqrt(2) - hub_thickness/2;
@@ -56,3 +54,4 @@ cam_length = 55;
 cam_height = 25;
 // standard tripod mount screw is 1/4"
 cam_bolt_diameter = 6.35;
+

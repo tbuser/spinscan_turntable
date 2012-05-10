@@ -13,13 +13,20 @@ assembly();
 // base_board();
 
 module assembly() {
-  %translate([0, 0, 45]) base_board();
+  %translate([0, 0, 50]) base_board();
 
-  translate([0, 45.4+8.1, 8]) motor();
+  %translate([0, 0, 50+table_height]) lazy_susan();
 
-  translate([0, 0, 45+table_height]) gear_large();
+  translate([0, 30.52+7.44, 5]) motor();
 
-  %translate([0, 0, 45+table_height+gear_height]) table();
+  translate([0, 0, -gear_height+50+table_height+lazy_susan_height]) gear_large();
+
+  %translate([0, 0, 50+table_height+lazy_susan_height]) table();
+  
+  // angle markers
+  rotate([0, 0, 15]) translate([0, 0, 50+table_height+lazy_susan_height]) rotate([90, 0, 0]) cylinder(r=1, h=table_diameter, center=false);
+  rotate([0, 0, 30]) translate([0, 0, 50+table_height+lazy_susan_height]) rotate([90, 0, 0]) cylinder(r=1, h=table_diameter, center=false);
+  rotate([0, 0, 45]) translate([0, 0, 50+table_height+lazy_susan_height]) rotate([90, 0, 0]) cylinder(r=1, h=table_diameter, center=false);
 }
 
 module gear_small() {  
@@ -42,18 +49,14 @@ module gear_small() {
 module gear_large() {
   difference() {
     //cylinder(h=gear_height, r=gear_radius_large);
-    gear (circular_pitch=268,
-      gear_thickness = gear_height/2,
+    gear(circular_pitch=268,
+      gear_thickness = gear_height,
       rim_thickness = gear_height,
-      hub_thickness = gear_height,
-      hub_diameter = nut_diameter*1.5,
-      circles=8,
-      number_of_teeth=61);
+      hub_thickness = 0,
+      bore_diameter=0,
+      circles=0,      
+      number_of_teeth=41);
 
-    translate([0, 0, gear_height-nut_height+1]) nut();
-
-    translate([0, 0, -1]) rod(gear_height+2);
-    
     for (i=[0:3]) {
       rotate([0, 0, i*90]) translate([nut_radius*2, 0, -1]) cylinder(h=gear_height+2, r=3.3/2);
     }
@@ -70,7 +73,7 @@ module motor() {
     }
     cylinder(h=motor_height+motor_shaft_height, r=motor_shaft_radius);
     translate([0, 0, motor_height]) cylinder(h=2, r=22/2);
-    translate([0, 0, hub_height+hub_thickness+1-7]) gear_small();
+    translate([0, 0, motor_height+motor_shaft_height-gear_height-7/2]) gear_small();
   }
 }
 
@@ -158,19 +161,52 @@ module table() {
   difference() {
     cylinder(h=table_height, r=table_radius);
     
-    translate([0, 0, -1]) rod(table_height+2);
-    
-    translate([0, 0, table_height-nut_height]) nut();
-    
     for (i=[1:4]) {
-      rotate([0, 0, i*90]) rotate([0, 0, 45]) translate([nut_radius*2, 0, -1]) cylinder(h=table_height+2, r=3.3/2);
-      rotate([0, 0, i*90]) rotate([0, 0, 45]) translate([nut_radius*2, 0, table_height-5]) cylinder(h=table_height, r=5/2);
+      rotate([0, 0, i*90]) translate([nut_radius*2, 0, -1]) cylinder(h=table_height+2, r=3.3/2);
+      rotate([0, 0, i*90]) translate([nut_radius*2, 0, table_height-5]) cylinder(h=table_height, r=5/2);
     }    
   }
 }
 
-module base_board(args) {
-  translate([0, 0, table_height/2]) cube(size = [table_diameter, table_diameter, table_height], center = true);
+module base_board() {
+  // translate([0, -table_diameter/2, table_height/2]) cube(size = [table_diameter, table_diameter*2, table_height], center = true);
+  // translate([0, 0, table_height/2]) cube(size = [8.5*25.4, 11*25.4, table_height], center = true);
+  translate([0, -3*25.4, table_height/2]) cube(size = [12*25.4, 12*25.4, table_height], center = true);
+}
+
+module lazy_susan() {
+  difference() {
+    union() {
+      // bottom
+      translate([0, 0, 0.5]) {
+        difference() {
+          cube(size=[152, 152, 1], center=true);
+          // bottom holes - 122mm apart
+          translate([-152/2+15, -152/2+15, -1]) cylinder(r=3/2, h=2, center=false);
+          translate([-152/2+15, 152/2-15, -1]) cylinder(r=3/2, h=2, center=false);
+          translate([152/2-15, -152/2+15, -1]) cylinder(r=3/2, h=2, center=false);
+          translate([152/2-15, 152/2-15, -1]) cylinder(r=3/2, h=2, center=false);
+        }
+      }
+
+      // top
+      rotate([0, 0, 45]) translate([0, 0, -0.5+lazy_susan_height]) {
+        difference() {
+          cube(size=[152, 152, 1], center=true);
+          // top holes - 142mm apart
+          translate([-152/2+5, -152/2+5, -1]) cylinder(r=6/2, h=2, center=false);
+          translate([-152/2+5, 152/2-5, -1]) cylinder(r=6/2, h=2, center=false);
+          translate([152/2-5, -152/2+5, -1]) cylinder(r=6/2, h=2, center=false);
+          translate([152/2-5, 152/2-5, -1]) cylinder(r=6/2, h=2, center=false);
+        }
+      }
+      
+      // bearings
+      cylinder(r=125/2, h=lazy_susan_height, center=false);
+    }
+    // center hole
+    translate([0, 0, -1]) cylinder(r=117/2, h=lazy_susan_height+2, center=false);
+  }
 }
 
 /* OLD CODE BELOW */
