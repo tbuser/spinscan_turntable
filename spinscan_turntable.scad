@@ -1,6 +1,5 @@
 use <../pin_connectors/pins.scad>
 
-
 lazy_susan_height = 10;
 // distance is horizontal distance between 2 holes
 lazy_susan_bottom_hole_distance = 122;
@@ -23,7 +22,7 @@ table_connector_tab_distance = 20;
 table_connector_diameter = table_connector_tab_distance + (table_connector_tab_diameter*2);
 table_connector_radius = table_connector_diameter/2;
 
-hub_height = 5+motor_height+(motor_shaft_height-lazy_susan_height-table_thickness);
+hub_height = 5+motor_height+(motor_shaft_height-lazy_susan_height-table_thickness)+2;
 hub_width = lazy_susan_bottom_hole_distance/2;
 
 echo(str("Total Table Height: ", hub_height+lazy_susan_height+table_thickness));
@@ -142,7 +141,7 @@ module table_connector() {
     
     translate([0, 0, -1]) cylinder(r=motor_shaft_radius+0.2, h=table_connector_height+2, center=false);
     
-    translate([0, -4.5, 4.5-0.1]) cube([5.5, 2.3, 9], center=true);
+    translate([0, -4.5, 4.5]) cube([5.5, 2.3, 9], center=true);
     translate([0, 0, 7/2]) rotate([0, 90, -90]) cylinder(r=1.7, h=table_connector_radius);
   }
 }
