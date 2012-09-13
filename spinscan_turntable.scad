@@ -5,15 +5,24 @@ $fn=50;
 // should probably be at least 5
 felt_thickness = 5.5;
 
+rod_diameter = (0.3125 * 25.4) + 0.4; // 5/16"
+rod_radius = rod_diameter/2;
+
+cam_width = 45;
+cam_length = 55;
+cam_height = 25;
+// standard tripod mount screw is 1/4"
+cam_bolt_diameter = 6.35;
+
 motor_width = 43;
 motor_height = 33;
 motor_shaft_height = 25;
 motor_shaft_diameter = 5;
 motor_shaft_radius = motor_shaft_diameter/2;
 
-table_diameter = 8 * 25.4;
+table_diameter = 8 * 25.4; // 8"
 table_radius = table_diameter/2;
-table_thickness = 0.25 * 25.4;
+table_thickness = 0.25 * 25.4; // 1/4"
 
 table_connector_height = felt_thickness + table_thickness;
 table_connector_tab_diameter = 6;
@@ -31,6 +40,11 @@ hub_leg_thickness = 15;
 laser_diameter = 12;
 laser_radius = laser_diameter/2;
 
+base_thickness = 5;
+base_height = hub_height;
+base_diameter = 65;
+base_radius = base_diameter/2;
+
 total_height = hub_height+felt_thickness+table_thickness;
 
 echo(str("Total Table Height: ", total_height));
@@ -42,6 +56,8 @@ part = "assembly";
 // part = "table_connector";
 // part = "table_top";
 // part = "laser_clamp";
+// part = "cam_shelf";
+// part = "base";
 print_part(part);
 
 module assembly() {
@@ -55,15 +71,30 @@ module assembly() {
   
   // blocking out webcam/laser mount
   
-  // color([255, 0, 0]) {
-  //   // laser line at 30 degrees
-  //   rotate([0, 0, -30]) translate([0, -(24*25.4)/2, 0.5+(total_height)]) cube(size=[1, (24*25.4), 1], center=true);
-  //   rotate([0, 0, 30]) translate([0, -(24*25.4)/2, 0.5+(total_height)]) cube(size=[1, (24*25.4), 1], center=true);
-  // 
-  //   // laser line at 15 degrees
-  //   rotate([0, 0, -15]) translate([0, -(24*25.4)/2, 0.5+(total_height)]) cube(size=[1, (24*25.4), 1], center=true);
-  //   rotate([0, 0, 15]) translate([0, -(24*25.4)/2, 0.5+(total_height)]) cube(size=[1, (24*25.4), 1], center=true);
-  // }
+  color([255, 0, 0]) {
+    // laser line at 15 degrees
+    rotate([0, 0, -30]) translate([0, -(9*25.4)/2, 0.5+(total_height*2)]) cube(size=[1, (9*25.4), 1], center=true);
+  }
+
+  // cam base
+  translate([0, -(8*25.4), base_height]) {
+    rotate([180, 0, 0]) base();
+    
+    translate([15, 0, 0]) rod(total_height*2);
+    translate([-15, 0, 0]) rod(total_height*2);
+    
+    translate([0, 20, total_height]) rotate([180, 0, 0]) cam_shelf();
+  }
+
+  // laser base
+  rotate([0, 0, -30]) translate([0, -(9*25.4), base_height]) {
+    rotate([180, 0, 0]) base();
+    
+    translate([-15, 0, 0]) rod(total_height*2);
+    
+    translate([0, -5, total_height+10]) rotate([90, 0, 180]) laser_clamp();
+  } 
+
   // 
   // // cam 1 foot away from table
   // translate([0, -(12*25.4), 20+(total_height)]) cube(size=[90, 40, 40], center=true);
@@ -100,7 +131,13 @@ module print_part(name) {
     // laser cut or hand drill
     projection(cut = true) table_top();
   } else if (name == "laser_clamp") {
+    // 1 copy
     laser_clamp();
+  } else if (name == "cam_shelf") {
+    // 1 copy
+    cam_shelf();
+  } else if (name == "base") {
+    base();
   }
 }
 
@@ -240,3 +277,71 @@ module motor() {
   }
 }
 
+module rod(length) {
+  color([0/255, 0/255, 255/255]) cylinder(h=length, r=rod_radius);
+}
+
+module cam_shelf() {
+  translate([0, -2.97, cam_height/2]) rotate([180]) {
+  	difference() {
+  		union() {
+  			difference() {
+  				cube([cam_width, cam_length, cam_height], center=true);
+  				translate([0, cam_length/4+1, -(cam_height-13)/2-1]) {
+  					//box(cam_width+2, cam_length/2+1, cam_height-13+1, center=true);
+  					cylinder(h=cam_height-13+1, r=(cam_width+cam_width/6)/2, center=true);
+  				}
+  			}
+
+  			translate([-15, -cam_length/2+rod_diameter/2, 0]) {
+  				cylinder(h=cam_height, r=rod_diameter+rod_diameter/4, center=true);
+  			}
+			
+  			translate([15, -cam_length/2+rod_diameter/2, 0]) {
+  				cylinder(h=cam_height, r=rod_diameter+rod_diameter/4, center=true);
+  			}
+
+  		}
+
+  		// adjustable tripod mount hole for cameras whose lense is offset from the tripod screw hole
+  		translate([0, 45-cam_length/2, 0]) {
+  			// centered hole
+  			//cylinder(cam_height+2, cam_bolt_diameter/2, cam_bolt_diameter/2, center=true);
+  			// slot
+  			cube([cam_width-6, cam_bolt_diameter, cam_height+2], center=true);
+  		}
+
+  		// top left hole
+  		translate([-15, -cam_length/2+rod_diameter/2, 0]) {
+  			translate([0, 0, -(cam_height+2)/2]) rod(cam_height+2);
+  		}
+
+  		// top right hole
+  		translate([15, -cam_length/2+rod_diameter/2, 0]) {
+  			translate([0, 0, -(cam_height+2)/2]) rod(cam_height+2);
+  		}
+
+  		// top center line
+  		translate([0, 0, cam_height/2]) cube([1, cam_length-2, 2], center=true);
+
+  		// top horizontal line
+  		translate([0, -cam_length/2+rod_diameter/2, cam_height/2]) rotate([0, 0, 90]) cube([1, cam_width+rod_diameter, 2], center=true);
+  	}
+  }
+}
+
+module base() {
+  difference() {
+    cylinder(r=base_radius, h=hub_height, center=false);
+    
+    // hollow it
+    translate([0, 0, base_thickness]) cylinder(r=base_radius-base_thickness, h=hub_height, center=false);
+    
+    // add holes
+    translate([0, 0, -1]) cylinder(h=base_thickness+2, r=rod_radius);
+    translate([-15, 0, -1]) cylinder(h=base_thickness+2, r=rod_radius);
+    translate([15, 0, -1]) cylinder(h=base_thickness+2, r=rod_radius);
+    translate([0, -15, -1]) cylinder(h=base_thickness+2, r=rod_radius);
+    translate([0, 15, -1]) cylinder(h=base_thickness+2, r=rod_radius);    
+  }
+}
