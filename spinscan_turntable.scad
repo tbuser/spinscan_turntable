@@ -1,5 +1,7 @@
 use <../pin_connectors/pins.scad>
 
+$fn=50;
+
 // should probably be at least 5
 felt_thickness = 5.5;
 
@@ -21,9 +23,10 @@ table_connector_diameter = table_connector_tab_distance + (table_connector_tab_d
 table_connector_radius = table_connector_diameter/2;
 
 hub_height = 5+motor_height+(motor_shaft_height-felt_thickness-table_thickness);
-hub_width = 60;
+hub_width = 75;
 
 hub_leg_length = table_radius-(hub_width/2);
+hub_leg_thickness = 15;
 
 laser_diameter = 12;
 laser_radius = laser_diameter/2;
@@ -32,13 +35,13 @@ total_height = hub_height+felt_thickness+table_thickness;
 
 echo(str("Total Table Height: ", total_height));
 
-// part = "assembly";
+part = "assembly";
 // part = "hub";
 // part = "hub_leg";
 // part = "pinpeg";
 // part = "table_connector";
 // part = "table_top";
-part = "laser_clamp";
+// part = "laser_clamp";
 print_part(part);
 
 module assembly() {
@@ -52,25 +55,25 @@ module assembly() {
   
   // blocking out webcam/laser mount
   
-  color([255, 0, 0]) {
-    // laser line at 30 degrees
-    rotate([0, 0, -30]) translate([0, -(24*25.4)/2, 0.5+(total_height)]) cube(size=[1, (24*25.4), 1], center=true);
-    rotate([0, 0, 30]) translate([0, -(24*25.4)/2, 0.5+(total_height)]) cube(size=[1, (24*25.4), 1], center=true);
-
-    // laser line at 15 degrees
-    rotate([0, 0, -15]) translate([0, -(24*25.4)/2, 0.5+(total_height)]) cube(size=[1, (24*25.4), 1], center=true);
-    rotate([0, 0, 15]) translate([0, -(24*25.4)/2, 0.5+(total_height)]) cube(size=[1, (24*25.4), 1], center=true);
-  }
-  
-  // cam 1 foot away from table
-  translate([0, -(12*25.4), 20+(total_height)]) cube(size=[90, 40, 40], center=true);
-
-  // adjustable laser arms
-  translate([-90, -(12*25.4), 20+(total_height)]) cube(size=[90, 40, 20], center=true);
-  translate([-180, -(12*25.4), 20+(total_height)]) cube(size=[90, 40, 20], center=true);
-
-  translate([90, -(12*25.4), 20+(total_height)]) cube(size=[90, 40, 20], center=true);
-  translate([180, -(12*25.4), 20+(total_height)]) cube(size=[90, 40, 20], center=true);
+  // color([255, 0, 0]) {
+  //   // laser line at 30 degrees
+  //   rotate([0, 0, -30]) translate([0, -(24*25.4)/2, 0.5+(total_height)]) cube(size=[1, (24*25.4), 1], center=true);
+  //   rotate([0, 0, 30]) translate([0, -(24*25.4)/2, 0.5+(total_height)]) cube(size=[1, (24*25.4), 1], center=true);
+  // 
+  //   // laser line at 15 degrees
+  //   rotate([0, 0, -15]) translate([0, -(24*25.4)/2, 0.5+(total_height)]) cube(size=[1, (24*25.4), 1], center=true);
+  //   rotate([0, 0, 15]) translate([0, -(24*25.4)/2, 0.5+(total_height)]) cube(size=[1, (24*25.4), 1], center=true);
+  // }
+  // 
+  // // cam 1 foot away from table
+  // translate([0, -(12*25.4), 20+(total_height)]) cube(size=[90, 40, 40], center=true);
+  // 
+  // // adjustable laser arms
+  // translate([-90, -(12*25.4), 20+(total_height)]) cube(size=[90, 40, 20], center=true);
+  // translate([-180, -(12*25.4), 20+(total_height)]) cube(size=[90, 40, 20], center=true);
+  // 
+  // translate([90, -(12*25.4), 20+(total_height)]) cube(size=[90, 40, 20], center=true);
+  // translate([180, -(12*25.4), 20+(total_height)]) cube(size=[90, 40, 20], center=true);
   
 }
 
@@ -86,7 +89,7 @@ module print_part(name) {
     // 8 felt tabs
     translate([0, 0, hub_height]) rotate([180, 0, 0]) hub_leg();
   } else if (name == "pinpeg") {
-    // 4 copies
+    // 8 copies
     pinpeg();
   } else if (name == "table_connector") {
     // 1 copy
@@ -140,6 +143,7 @@ module hub() {
     // leg connector holes
     for (i=[0:3]) {
       rotate([0, 0, i*90]) translate([-hub_width/2, 0, hub_height-6]) rotate([0, 90, 0]) pinhole();
+      rotate([0, 0, i*90]) translate([-hub_width/2, 0, 6]) rotate([0, 90, 0]) pinhole();
     }
     
     // wire space
@@ -150,7 +154,7 @@ module hub() {
 module hub_leg() {
   difference() {
     union() {
-      translate([0, 0, hub_height/2]) cube(size=[11, hub_leg_length, hub_height], center=true);
+      translate([0, 0, hub_height/2]) cube(size=[hub_leg_thickness, hub_leg_length, hub_height], center=true);
 
       // felt tabs
       translate([0, -hub_leg_length/2+10, -5/2+hub_height]) cylinder(r=10, h=5, center=true);
@@ -158,14 +162,16 @@ module hub_leg() {
     }
 
     // center cutout
-    translate([0, 0, hub_height-((hub_leg_length-22)/2)-11]) rotate([0, 90, 0]) cylinder(r=(hub_leg_length-11)/2, h=20, center=true);
-    translate([0, 0, (hub_height/4)-0.5]) cube(size=[17, (hub_leg_length-22), (hub_height/2)+1], center=true);
+    translate([0, 0, (hub_height/2)]) rotate([0, 90, 0]) cylinder(r=(hub_leg_length-22)/2, h=20, center=true);
+    translate([0, 0, (hub_height/4)]) cube(size=[17, (hub_leg_length-22), (hub_height/2)+1], center=true);
     
-    // hub side hole
+    // hub side hole2
     translate([0, hub_leg_length/2, hub_height-6]) rotate([90, 0, 0]) pinhole();
+    translate([0, hub_leg_length/2, 6]) rotate([90, 0, 0]) pinhole();
     
     // outside holes for possible future expansion use
     translate([0, -hub_leg_length/2, hub_height-6]) rotate([-90, 0, 0]) pinhole();
+    translate([0, -hub_leg_length/2, 6]) rotate([-90, 0, 0]) pinhole();
   }
 }
 
