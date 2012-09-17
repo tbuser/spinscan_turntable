@@ -80,8 +80,8 @@ module assembly() {
   translate([0, -(8*25.4), base_height]) {
     rotate([180, 0, 0]) base();
     
-    translate([15, 0, 0]) rod(total_height*2);
-    translate([-15, 0, 0]) rod(total_height*2);
+    translate([15, 0, 0]) rod(8 * 25.4);
+    translate([-15, 0, 0]) rod(8 * 25.4);
     
     translate([0, 20, total_height]) rotate([180, 0, 0]) cam_shelf();
   }
@@ -90,9 +90,9 @@ module assembly() {
   rotate([0, 0, -30]) translate([0, -(9*25.4), base_height]) {
     rotate([180, 0, 0]) base();
     
-    translate([-15, 0, 0]) rod(total_height*2);
+    translate([-15, 0, 0]) rod(8 * 25.4);
     
-    translate([0, -5, total_height+10]) rotate([90, 0, 180]) laser_clamp();
+    translate([-2, -6, total_height+10]) rotate([90, 0, 180]) laser_clamp();
   } 
 
   // 
