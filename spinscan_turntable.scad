@@ -1,242 +1,266 @@
-include <spinscan_turntable.inc>
-include <../MCAD/teardrop.scad>
-include <../MCAD/involute_gears.scad>
+use <../pin_connectors/pins.scad>
 
-echo("Top Spoke Length (4): ", spoke_length_top);
-echo("Bottom Spoke Length (4): ", spoke_length_bottom);
-echo("Hub Diameter: ", hub_diameter);
-echo("Hub Height: ", hub_height+hub_thickness);
-echo("Gear Height: ", gear_height);
+$fn=50;
 
-// layout();
-// motor_layout();
+// should probably be at least 5
+felt_thickness = 5.5;
 
-// hub();
-// hubcap("bearing");
-// hubcap("holes");
-// roller();
-// laser_clamp();
-// gear_large();
-gear_small();
-// motor_mount();
-// pcb_mount(); 
-// cam_mount();
+rod_diameter = (0.3125 * 25.4) + 0.4; // 5/16"
+rod_radius = rod_diameter/2;
+
+cam_width = 45;
+cam_length = 55;
+cam_height = 25;
+// standard tripod mount screw is 1/4"
+cam_bolt_diameter = 6.35;
+
+motor_width = 43;
+motor_height = 33;
+motor_shaft_height = 25;
+motor_shaft_diameter = 5;
+motor_shaft_radius = motor_shaft_diameter/2;
+
+table_diameter = 8 * 25.4; // 8"
+table_radius = table_diameter/2;
+table_thickness = 0.25 * 25.4; // 1/4"
+
+table_connector_height = felt_thickness + table_thickness;
+table_connector_tab_diameter = 6;
+table_connector_tab_radius = table_connector_tab_diameter/2;
+table_connector_tab_distance = 20;
+table_connector_diameter = table_connector_tab_distance + (table_connector_tab_diameter*2);
+table_connector_radius = table_connector_diameter/2;
+
+hub_height = 5+motor_height+(motor_shaft_height-felt_thickness-table_thickness);
+hub_width = 75;
+
+hub_leg_length = table_radius-(hub_width/2);
+hub_leg_thickness = 15;
+
+laser_diameter = 12;
+laser_radius = laser_diameter/2;
+
+base_thickness = 5;
+base_height = hub_height;
+base_diameter = 65;
+base_radius = base_diameter/2;
+
+total_height = hub_height+felt_thickness+table_thickness;
+
+echo(str("Total Table Height: ", total_height));
+
+part = "assembly";
+// part = "hub";
+// part = "hub_leg";
+// part = "pinpeg";
+// part = "table_connector";
+// part = "table_top";
+// part = "laser_clamp";
+// part = "cam_shelf";
+// part = "base";
+print_part(part);
+
+module assembly() {
+  %translate([0, 0, hub_height+felt_thickness]) table_top();
+  translate([0, 0, 5]) motor();
+  hub();
+  for (i=[0:3]) {
+    rotate([0, 0, i*90]) translate([0, -hub_leg_length/2-hub_width/2, 0]) hub_leg();
+  }
+  translate([0, 0, hub_height+felt_thickness+table_thickness-table_connector_height]) table_connector();
+  
+  // blocking out webcam/laser mount
+  
+  color([255, 0, 0]) {
+    // laser line at 15 degrees
+    rotate([0, 0, -30]) translate([0, -(9*25.4)/2, 0.5+(total_height*2)]) cube(size=[1, (9*25.4), 1], center=true);
+  }
+
+  // cam base
+  translate([0, -(8*25.4), base_height]) {
+    rotate([180, 0, 0]) base();
+    
+    translate([15, 0, 0]) rod(8 * 25.4);
+    translate([-15, 0, 0]) rod(8 * 25.4);
+    
+    translate([0, 20, total_height]) rotate([180, 0, 0]) cam_shelf();
+  }
+
+  // laser base
+  rotate([0, 0, -30]) translate([0, -(9*25.4), base_height]) {
+    rotate([180, 0, 0]) base();
+    
+    translate([-15, 0, 0]) rod(8 * 25.4);
+    
+    translate([-2, -6, total_height+10]) rotate([90, 0, 180]) laser_clamp();
+  } 
+
+  // 
+  // // cam 1 foot away from table
+  // translate([0, -(12*25.4), 20+(total_height)]) cube(size=[90, 40, 40], center=true);
+  // 
+  // // adjustable laser arms
+  // translate([-90, -(12*25.4), 20+(total_height)]) cube(size=[90, 40, 20], center=true);
+  // translate([-180, -(12*25.4), 20+(total_height)]) cube(size=[90, 40, 20], center=true);
+  // 
+  // translate([90, -(12*25.4), 20+(total_height)]) cube(size=[90, 40, 20], center=true);
+  // translate([180, -(12*25.4), 20+(total_height)]) cube(size=[90, 40, 20], center=true);
+  
+}
+
+module print_part(name) {
+  if (name == "assembly") {
+    assembly();
+  } else if (name == "hub") {
+    // 1 copy
+    // 4 x M3 16mm bolts
+    translate([0, 0, hub_height]) rotate([180, 0, 0]) hub();
+  } else if (name == "hub_leg") {
+    // 4 copies
+    // 8 felt tabs
+    translate([0, 0, hub_height]) rotate([180, 0, 0]) hub_leg();
+  } else if (name == "pinpeg") {
+    // 8 copies
+    pinpeg();
+  } else if (name == "table_connector") {
+    // 1 copy
+    // 1 x M3 grub screw or small bolt
+    // 1 x M3 nut
+    table_connector();
+  } else if (name == "table_top") {
+    // laser cut or hand drill
+    projection(cut = true) table_top();
+  } else if (name == "laser_clamp") {
+    // 1 copy
+    laser_clamp();
+  } else if (name == "cam_shelf") {
+    // 1 copy
+    cam_shelf();
+  } else if (name == "base") {
+    base();
+  }
+}
 
 module hub() {
   difference() {
-    // make it hollow
-    rotate([0, 0, 45/2]) cylinder(h=hub_height+hub_thickness, r=hub_radius, $fn=8);
-    // rotate([0, 0, 45/2]) linear_extrude(height=hub_height+hub_thickness) circle(hub_radius, $fn=8);
-    rotate([0, 0, 45/2]) translate([0, 0, -1]) cylinder(h=hub_height+hub_thickness+2, r=hub_radius-hub_thickness, $fn=8);
-    // rotate([0, 0, 45/2]) translate([0, 0, -1]) linear_extrude(height=hub_height+hub_thickness+2) circle(hub_radius-hub_thickness, $fn=8);
-    
-    // top holes
-    for (i = [0:3]) {
-      translate([0, 0, hub_height-hub_height/4]) rotate([0, 0, i*45]) teardrop(rod_radius, hub_diameter, 90);      
-    }
-
-    // bottom holes
-    for (i = [0:3]) {
-      translate([0, 0, hub_height/4]) rotate([0, 0, i*45]) teardrop(rod_radius, hub_diameter, 90);
-    }
-    
-    // translate([0, 0, hub_height]) hubcap(); // this causes openscad error about too many elements in normalized tree...
-    for (i = [0:3]) {
-      rotate([0, 0, i*45]) translate([-hub_thickness/2, hub_radius, hub_height]) rotate([90, 0, 0]) cube([hub_thickness, hub_thickness+1, hub_diameter]);
-    }    
-  }
-}
-
-module hubcap(hubcap_type) {
-  difference() {
-    union () {
-      rotate([0, 0, 45/2]) cylinder(h=hub_thickness, r=hub_radius-hub_thickness, $fn=8);
-
-      intersection() {
-        rotate([0, 0, 45/2]) cylinder(h=hub_thickness, r=hub_radius, $fn=8);
-        for (i = [0:3]) {
-          rotate([0, 0, i*45]) translate([-hub_thickness/2, hub_radius, 0]) rotate([90, 0, 0]) cube([hub_thickness, hub_thickness, hub_diameter]);
-        }
-      }
-    }
-
-    if (hubcap_type == "bearing") {
-      translate([0, 0, -1]) cylinder(h=hub_thickness+2, r=bearing_radius);
-    } else if (hubcap_type == "holes") {
-      translate([0, 0, -1]) cylinder(h=hub_thickness+2, r=rod_radius);
-
-      translate([-15, 0, -1]) cylinder(h=hub_thickness+2, r=rod_radius);
-      translate([15, 0, -1]) cylinder(h=hub_thickness+2, r=rod_radius);
-      translate([0, -15, -1]) cylinder(h=hub_thickness+2, r=rod_radius);
-      translate([0, 15, -1]) cylinder(h=hub_thickness+2, r=rod_radius);
-    } else if (hubcap_type == "stepper") {
-      // TODO: maybe add mounting holes for nema17 stepper and shaft?
-    }
-  } 
-}
-
-module motor_mount() {
-  translate([-hub_radius, hub_radius, hub_height]) rotate([0, 180, 0]) {
-    difference() {
-      union() {
-        rotate([0, 0, 45/2]) cylinder(h=hub_height, r=hub_radius+hub_thickness/2, $fn=8);
-        rotate([0, 0, 45]) translate([-45.4-8.1, 0, 0]) translate([-motor_width/2, -motor_width/2, motor_height]) cube([motor_width+hub_radius, motor_width, hub_height-motor_height]);
-      }
-    
-      // inside cut
-      rotate([0, 0, 45/2]) translate([0, 0, -1]) cylinder(h=hub_height+2, r=hub_radius, $fn=8);
-    
-      // cut in half
-      translate([hub_diameter/4, hub_diameter/4, -1]) rotate([0, 0, 45]) translate([-hub_diameter/2-hub_thickness, -hub_diameter/2-hub_thickness/4, 0]) cube([hub_diameter+hub_thickness/2, hub_diameter+hub_thickness/2, hub_height+2]);
-  
-      // top holes
-      for (i = [0:3]) {
-        translate([0, 0, hub_height-hub_height/4]) rotate([180, 0, i*45]) teardrop(rod_radius, hub_diameter+hub_thickness/2-2, 90);
-        rotate([0, 0, i*90]) translate([0, hub_radius+hub_thickness/2+nut_height/2+1, hub_height-hub_height/4]) rotate([90, 0, 0]) nut();
-        rotate([0, 0, i*90]) translate([0, hub_radius+hub_thickness/2+nut_height/2+nut_height, hub_height-hub_height/4]) rotate([90, 0, 0]) nut();
-      }
-    
-      // bottom holes
-      for (i = [0:3]) {
-        translate([0, 0, hub_height/4]) rotate([180, 0, i*45]) teardrop(rod_radius, hub_diameter+hub_thickness/2, 90);
-      }
-    
-      // motor holes
-      rotate([0, 0, 135]) {
-        translate([0, motor_width+hub_radius/4+3, 0]) {
-          // center shaft
-          translate([0, 10, 0]) {
-            translate([0, -13, 0]) cylinder(h=hub_height+1, r=11);
-            translate([0, -1, hub_height/2]) cube([22,26,hub_height+1], center=true);
-            translate([0, +13, 0]) cylinder(h=hub_height+1, r=11);
-          }
-          // mounting bolts
-          translate([15-1.65, -15-5, 0]) cube([3.3, 39.5, hub_height+1]);
-          translate([-15-1.65, -15-5, 0]) cube([3.3, 39.5, hub_height+1]);
+    union() {
+      difference() {
+        // main body
+        rotate([0, 0, 0]) translate([0, 0, hub_height/2]) cube(size=[hub_width, hub_width, hub_height], center=true);
+        // rotate([0, 0, 22.5]) cylinder(r=hub_width/2, h=hub_height, center=false, $fn=8);
         
-          // #translate([15, -15, 0]) cylinder(h=hub_height+1, r=1.65);
-          // #translate([15, 15, 0]) cylinder(h=hub_height+1, r=1.65);
-          // #translate([-15, 15, 0]) cylinder(h=hub_height+1, r=1.65);
-          // #translate([-15, -15, 0]) cylinder(h=hub_height+1, r=1.65);
+        // side openings
+        // translate([0, 0, 0]) rotate([90, 0, 0]) cylinder(r=hub_height/2, h=motor_width*2, center=true);
+        // translate([0, 0, 0]) rotate([0, 90, 0]) cylinder(r=hub_height/2, h=motor_width*2, center=true);
+        
+        // side curves
+        for (i=[0:3]) {
+          rotate([0, 0, i*90+45]) translate([0, -hub_width/2-10, -1]) cylinder(r=hub_width/4, h=hub_height+2, center=false);
+          // rotate([0, 0, i*90]) translate([-hub_width/2, -hub_width/2, hub_height/2]) rotate([0, 0, 45]) cube(size=[10, 10, hub_height+2], center=true);
         }
       }
+
+      // for (i=[0:3]) {
+      //   rotate([0, 0, i*90]) translate([-hub_width/2+2.5, -hub_width/2+2.5, hub_height/2]) rotate([0, 0, 45]) cube(size=[5, 12.5, hub_height], center=true);
+      // }
+      
+      //rotate([0, 0, 45]) translate([0, -72, hub_height/2]) cube(size=[10, 65, hub_height], center=true);
     }
-  }
-}
-
-module motor_layout() {
-  hub();
-  translate([0, 0, hub_height]) hubcap("bearing");
-  %rotate([0, 0, 45]) translate([-45.4-8.1, 0, 0]) rotate([0, 0, 0]) motor();
-  translate([-hub_radius, -hub_radius, hub_height]) rotate([0, 180, 0]) motor_mount();
-}
-
-module layout() {
-  hub();
-  translate([0, 0, hub_height]) hubcap("bearing");
-  translate([0, 0, hub_height+hub_thickness+gear_height+1]) rotate([180, 0, 45]) gear_large();
-  %translate([0, 0, hub_height+hub_thickness+gear_height+1]) table();
-
-  translate([-table_radius, 0, 0]) hub();
-  translate([table_radius, 0, 0]) hub();
-  translate([0, -table_radius, 0]) hub();
-  translate([0, table_radius, 0]) hub();
-
-  // top spokes
-  for (i=[0:3]) {
-    translate([0, 0, hub_height-hub_height/4]) rotate([0, 0, i*90]) translate([-hub_radius+hub_thickness*2, 0, 0]) rotate([0, -90, 0]) rod(spoke_length_top);
-  }
-  
-  // bottom spokes
-  for (i=[0:3]) {
-    rotate([0, 0, i*90]) translate([0, -table_radius, hub_height/4]) rotate([0, 0, -45]) translate([-hub_radius+hub_diameter/8+hub_thickness*2, 0, 0]) rotate([0, -90, 0]) rod(spoke_length_bottom);
-  }
-  
-  // move -large gear pitch radius-small gear pitch radius
-  rotate([0, 0, 45]) translate([-45.4-8.1, 0, 0]) rotate([0, 0, 0]) motor();
-  
-  translate([0, -table_radius, hub_height]) rotate([0, 0, 45]) hubcap("holes");
-  translate([-15/1.4, -table_radius-15/1.4, hub_height-hub_thickness*2]) rod(table_radius);  
-  translate([-5, -table_radius, table_radius]) rotate([90, 0, 0]) laser_clamp();
-  
-  for (i=[0:3]) {
-    rotate([0, 0, i*90]) translate([0, -table_radius+hub_radius+nut_height*2, hub_height-hub_height/4]) rotate([90, 0, 0]) roller();
-  }
-  
-  translate([-table_radius/2+20-rod_radius-2, -table_radius/2-20, (pcb_width+4)/2]) rotate([0, -90, -45]) pcb_mount();
-  
-  translate([-hub_radius, -hub_radius, hub_height]) rotate([0, 180, 0]) motor_mount();
-  
-  rotate([0, 0, 45*3]) translate([-table_radius-hub_diameter*2, 0, 0]) {
-    hub();
-    translate([0, 0, hub_height]) hubcap("holes");
-    translate([0, -15, hub_height]) rod(table_radius);
-    translate([0, 15, hub_height]) rod(table_radius);
+    // motor space
+    translate([0, 0, (motor_height+5)/2]) cube(size=[motor_width+0.5, motor_width+0.5, motor_height+5], center=true);
     
-    rotate([0, 180, 90]) translate([0, -20, -cam_height-hub_height*2]) cam_mount();
-  }
-  
-  translate([0, 0, hub_height-hub_height/4]) rotate([45, 90, 0]) translate([0, 0, 15]) rod(table_diameter);
-}
-
-module table() {
-  difference() {
-    cylinder(h=table_height, r=table_radius);
+    // shaft opening
+    cylinder(r=table_connector_radius+2, h=hub_height+1, center=false);
     
-    translate([0, 0, -1]) rod(table_height+2);
-    
-    translate([0, 0, table_height-nut_height]) nut();
-    
-    for (i=[1:4]) {
-      rotate([0, 0, i*90]) rotate([0, 0, 45]) translate([nut_radius*2, 0, -1]) cylinder(h=table_height+2, r=3.3/2);
-      rotate([0, 0, i*90]) rotate([0, 0, 45]) translate([nut_radius*2, 0, table_height-5]) cylinder(h=table_height, r=5/2);
-    }    
-  }
-}
-
-module nut() {
-  color([0/255, 0/255, 255/255]) cylinder(h=nut_height, r=nut_radius, $fn=6);
-}
-
-module rod(length) {
-  color([0/255, 0/255, 255/255]) cylinder(h=length, r=rod_radius);
-}
-
-module gear_small() {  
-  translate([0, 0, gear_height+7]) rotate([0, 180, 0]) {
-    difference() {
-      gear (circular_pitch=268,
-        gear_thickness = gear_height,
-        rim_thickness = gear_height,
-        bore_diameter = 5,
-        hub_thickness = gear_height+7,
-        hub_diameter = 20,
-        circles=0,
-        number_of_teeth=10, $fn=20);
-      translate([0,-4.5,gear_height+4.5])cube([5.5,2.3,9],center = true);
-  		translate([0,0,gear_height+7/2])rotate([0,90,-90])cylinder(r=1.7,h=20);
-    }
-  }
-}
-
-module gear_large() {
-  difference() {
-    //cylinder(h=gear_height, r=gear_radius_large);
-    gear (circular_pitch=268,
-      gear_thickness = gear_height/2,
-      rim_thickness = gear_height,
-      hub_thickness = gear_height,
-      hub_diameter = nut_diameter*1.5,
-      circles=8,
-      number_of_teeth=61);
-
-    translate([0, 0, gear_height-nut_height+1]) nut();
-
-    translate([0, 0, -1]) rod(gear_height+2);
-    
+    // motor holes
     for (i=[0:3]) {
-      rotate([0, 0, i*90]) translate([nut_radius*2, 0, -1]) cylinder(h=gear_height+2, r=3.3/2);
+      rotate([0, 0, i*90]) translate([15.5, 15.5, 0]) cylinder(h=hub_height+2, r=1.5+0.1);
     }
+
+    // leg connector holes
+    for (i=[0:3]) {
+      rotate([0, 0, i*90]) translate([-hub_width/2, 0, hub_height-6]) rotate([0, 90, 0]) pinhole();
+      rotate([0, 0, i*90]) translate([-hub_width/2, 0, 6]) rotate([0, 90, 0]) pinhole();
+    }
+    
+    // wire space
+    translate([0, 0, 15/2-1]) cube(size=[motor_width+6, motor_width+6, 15+1], center=true);
+  }
+}
+
+module hub_leg() {
+  difference() {
+    union() {
+      translate([0, 0, hub_height/2]) cube(size=[hub_leg_thickness, hub_leg_length, hub_height], center=true);
+
+      // felt tabs
+      translate([0, -hub_leg_length/2+10, -5/2+hub_height]) cylinder(r=10, h=5, center=true);
+      translate([0, hub_leg_length/2-10, -5/2+hub_height]) cylinder(r=10, h=5, center=true);
+    }
+
+    // center cutout
+    translate([0, 0, (hub_height/2)]) rotate([0, 90, 0]) cylinder(r=(hub_leg_length-22)/2, h=20, center=true);
+    translate([0, 0, (hub_height/4)]) cube(size=[17, (hub_leg_length-22), (hub_height/2)+1], center=true);
+    
+    // hub side hole2
+    translate([0, hub_leg_length/2, hub_height-6]) rotate([90, 0, 0]) pinhole();
+    translate([0, hub_leg_length/2, 6]) rotate([90, 0, 0]) pinhole();
+    
+    // outside holes for possible future expansion use
+    translate([0, -hub_leg_length/2, hub_height-6]) rotate([-90, 0, 0]) pinhole();
+    translate([0, -hub_leg_length/2, 6]) rotate([-90, 0, 0]) pinhole();
+  }
+}
+
+module table_connector() {
+  difference() {
+    union() {
+      cylinder(r=table_connector_radius, h=table_connector_height-table_thickness, center=false);
+      
+      // tabs
+      for (i=[0:3]) {
+        rotate([0, 0, i*90]) translate([0, -table_connector_tab_distance/2, table_connector_height-table_thickness]) cylinder(r=table_connector_tab_radius, h=table_thickness, center=false);
+      }
+    }
+    
+    // shaft hole
+    translate([0, 0, -1]) cylinder(r=motor_shaft_radius+0.2, h=table_connector_height+2, center=false);
+    
+    // trapped nut
+    rotate([0, 0, 45]) translate([0, -motor_shaft_radius-2, (table_connector_height-table_thickness)/2]) cube([5.5, 2.3, table_connector_height-table_thickness+2], center=true);
+    translate([0, 0, (table_connector_height-table_thickness)/2]) rotate([0, 90, -45]) cylinder(r=1.7, h=table_connector_radius+1);
+    rotate([0, 0, 45]) translate([0, -table_connector_radius+table_connector_radius/4-motor_shaft_radius, (table_connector_height-table_thickness)/2]) cube(size=[6, table_connector_radius/2, table_connector_height-table_thickness+2], center=true);
+  }
+}
+
+module table_top() {
+  difference() {
+    cylinder(r=table_radius, h=table_thickness, center=false);
+
+    translate([0, 0, -1]) cylinder(r=motor_shaft_radius, h=table_thickness+2, center=false);
+
+    for (i=[0:3]) {
+      rotate([0, 0, i*90]) translate([0, -table_connector_tab_distance/2, -1]) cylinder(r=table_connector_tab_radius, h=table_thickness+2, center=false);
+    }
+  }
+}
+
+module laser_clamp() {
+  translate([-((laser_radius+4)), 0, 0]) 
+  difference() {
+    union() {
+      cylinder(r=laser_radius+4, h=15, center=false);
+      translate([((laser_radius+4)+20)/2, 0, 15/2]) cube(size=[(laser_radius+4)+20, (laser_radius+4)*2, 15], center=true);
+    }
+    
+    // side mounting gap
+    translate([((laser_radius+4)+20)/2+0.5, 0, 15/2]) cube(size=[(laser_radius+4)+20+1, (laser_radius+1)*2-2, 15+2], center=true);
+
+    // laser hole
+    translate([0, 0, -1]) cylinder(r=laser_radius+0.5, h=15+2, center=false);
+    
+    // rod holes
+    translate([laser_radius+6+10, 0, 15/2]) rotate([90, 0, 0]) cylinder(r=4+0.2, h=laser_radius+4+20, center=true);
   }
 }
 
@@ -245,77 +269,19 @@ module motor() {
     difference() {
       translate([-motor_width/2, -motor_width/2, 0]) cube([motor_width, motor_width, motor_height]);
       for (i=[0:3]) {
-        rotate([0, 0, i*90]) translate([15, 15, motor_height-5]) cylinder(h=6, r=1.5);
+        rotate([0, 0, i*90]) translate([15.5, 15.5, motor_height-5]) cylinder(h=6, r=1.5);
       }
     }
     cylinder(h=motor_height+motor_shaft_height, r=motor_shaft_radius);
     translate([0, 0, motor_height]) cylinder(h=2, r=22/2);
-    translate([0, 0, hub_height+hub_thickness+1-7]) gear_small();
   }
 }
 
-module laser_clamp() {
-  translate([-1.75, 0, laser_height/2]) {
-  	difference() {
-  		union() {
-  			translate([-laser_width/4, 0, 0]) cube([laser_width/2, laser_length, laser_height], center=true);
-  			translate([laser_width/4, 0, 0]) {
-  				cylinder(h=laser_height, r=laser_length/2, center=true);
-  			}
-  			translate([laser_width/8, 0, 0]) {
-  				cube([laser_width/4, laser_length, laser_height], center=true);
-  			}
-  		}
-
-  		// laser hole
-  		translate([rod_diameter-2, 0, 0]) {
-  			cylinder(h=laser_height+2, r=laser_radius, center=true);
-  		}
-
-  		// bolt hole
-  		translate([-rod_diameter/2, 0, 0]) {
-  			rotate([90, -90, 0]) cylinder(h=laser_length+2, r=rod_radius, center=true);
-  		}
-
-  		// slit
-  		translate([-laser_diameter/2, 0, 0]) {
-  			cube([laser_width, laser_length/3, laser_height+2], center=true);
-  		}
-  	}
-	}
+module rod(length) {
+  color([0/255, 0/255, 255/255]) cylinder(h=length, r=rod_radius);
 }
 
-module roller() {
-  difference() {
-    cylinder(h=bearing_height, r=roller_radius);
-    translate([0, 0, -1]) cylinder(h=bearing_height+2, r=bearing_radius);
-  }
-}
-
-module pcb_mount() {
-  translate([-(pcb_width+4)/2, -(pcb_height+10)/2-rod_radius, 0]) {
-    difference() {
-      union() {
-        cube([pcb_width+4, pcb_height+10, pcb_length+6]);
-        translate([hub_height/4, (pcb_height+10)+rod_radius/1.5, 0]) cylinder(h=pcb_length*0.75, r=rod_radius+3);
-      }
-
-      // rod hole
-      translate([hub_height/4, (pcb_height+10)+rod_radius/1.5, 0]) translate([0, 0, -1]) cylinder(h=pcb_length*0.75+2, r=rod_radius+0.3);
-  
-      // top opening
-      translate([3, -2.5, 3]) cube([pcb_width-2, pcb_height+10, pcb_length]);
-  
-      // pcb slot
-      translate([1.75, 5-2.5, 1.75]) cube([pcb_width+0.5, pcb_height, pcb_length]);
-
-      // make shorter
-      translate([-1, -1, pcb_length*0.5]) cube([pcb_width+6, pcb_height+12+rod_diameter*2, pcb_length+6]);
-    }
-  }
-}
-
-module cam_mount() {
+module cam_shelf() {
   translate([0, -2.97, cam_height/2]) rotate([180]) {
   	difference() {
   		union() {
@@ -361,5 +327,21 @@ module cam_mount() {
   		// top horizontal line
   		translate([0, -cam_length/2+rod_diameter/2, cam_height/2]) rotate([0, 0, 90]) cube([1, cam_width+rod_diameter, 2], center=true);
   	}
+  }
+}
+
+module base() {
+  difference() {
+    cylinder(r=base_radius, h=hub_height, center=false);
+    
+    // hollow it
+    translate([0, 0, base_thickness]) cylinder(r=base_radius-base_thickness, h=hub_height, center=false);
+    
+    // add holes
+    translate([0, 0, -1]) cylinder(h=base_thickness+2, r=rod_radius);
+    translate([-15, 0, -1]) cylinder(h=base_thickness+2, r=rod_radius);
+    translate([15, 0, -1]) cylinder(h=base_thickness+2, r=rod_radius);
+    translate([0, -15, -1]) cylinder(h=base_thickness+2, r=rod_radius);
+    translate([0, 15, -1]) cylinder(h=base_thickness+2, r=rod_radius);    
   }
 }
